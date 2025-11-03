@@ -1,0 +1,8 @@
+export { PropertyPanel } from './PropertyPanel'
+export { Label } from './Label'
+export { Input } from './Input'
+export { Slider } from './Slider'
+export { ColorPicker } from './ColorPicker'
+export { TextProperties } from './TextProperties'
+export { ShapeProperties } from './ShapeProperties'
+export { ImageProperties } from './ImageProperties'

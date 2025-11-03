@@ -1,0 +1,195 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { fabric } from 'fabric'
+import { Canvas } from '@/components/editor/Canvas/Canvas'
+import { Toolbar } from '@/components/editor/Toolbar/Toolbar'
+import { TextTab } from '@/components/editor/AssetPanel/TextTab'
+import { ImageTab } from '@/components/editor/AssetPanel/ImageTab'
+import { ShapeTab } from '@/components/editor/AssetPanel/ShapeTab'
+import { PropertyPanel } from '@/components/editor/PropertyPanel/PropertyPanel'
+import { useCanvas } from '@/hooks/useCanvas'
+import { createImageObject } from '@/lib/fabric/image'
+import { validateImageFile } from '@/lib/utils/fileValidation'
+import { createRectangle, createCircle, createLine } from '@/lib/fabric/shape'
+
+export default function EditorPage() {
+  const [activeTool, setActiveTool] = useState('text')
+  const [canvasInstance, setCanvasInstance] = useState<fabric.Canvas | null>(null)
+  const { setCanvas, addText } = useCanvas()
+
+  const handleCanvasReady = (canvas: fabric.Canvas) => {
+    setCanvas(canvas)
+    setCanvasInstance(canvas)
+  }
+
+  const handleToolChange = (tool: string) => {
+    setActiveTool(tool)
+  }
+
+  const handleAddText = () => {
+    addText({
+      text: '双击编辑文字',
+      fontSize: 24,
+      fontFamily: 'Arial',
+      fill: '#000000',
+    })
+  }
+
+  const handleImageUpload = async (file: File) => {
+    if (!canvasInstance) {
+      alert('画布未初始化')
+      return
+    }
+
+    const validation = validateImageFile(file, {
+      maxSize: 10 * 1024 * 1024, // 10MB
+      allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    })
+
+    if (!validation.valid) {
+      alert(validation.error)
+      return
+    }
+
+    try {
+      const imageObject = await createImageObject(canvasInstance, file, {
+        maxSize: 800,
+      })
+
+      // Store file size for display
+      ;(imageObject as any).fileSize = file.size
+
+      alert('图片上传成功！')
+    } catch (error) {
+      console.error('Image upload error:', error)
+      alert('图片上传失败，请重试')
+    }
+  }
+
+  const handleShapeCreate = (shapeType: 'rectangle' | 'circle' | 'line') => {
+    if (!canvasInstance) {
+      alert('画布未初始化')
+      return
+    }
+
+    try {
+      switch (shapeType) {
+        case 'rectangle':
+          createRectangle(canvasInstance)
+          break
+        case 'circle':
+          createCircle(canvasInstance)
+          break
+        case 'line':
+          createLine(canvasInstance)
+          break
+      }
+    } catch (error) {
+      console.error('Shape creation error:', error)
+      alert('形状创建失败，请重试')
+    }
+  }
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only trigger shortcuts when not typing in an input
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as any)?.contentEditable === 'true'
+      ) {
+        return
+      }
+
+      const key = e.key.toLowerCase()
+      if (key === 'r') {
+        e.preventDefault()
+        handleShapeCreate('rectangle')
+      } else if (key === 'o') {
+        e.preventDefault()
+        handleShapeCreate('circle')
+      } else if (key === 'l') {
+        e.preventDefault()
+        handleShapeCreate('line')
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [canvasInstance])
+
+  return (
+    <div className="h-screen flex flex-col">
+      <Toolbar />
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar */}
+        <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+          <div className="p-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">素材工具</h2>
+          </div>
+
+          <div className="p-4 space-y-2 border-b border-gray-200">
+            <button
+              onClick={() => handleToolChange('text')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md ${
+                activeTool === 'text'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.832.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <span>文字</span>
+            </button>
+            <button
+              onClick={() => handleToolChange('image')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md ${
+                activeTool === 'image'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>图片</span>
+            </button>
+            <button
+              onClick={() => handleToolChange('shape')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md ${
+                activeTool === 'shape'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM7 3H5a2 2 0 00-2 2v12a4 4 0 004 4h2a2 2 0 002-2V5a2 2 0 00-2-2H7zM21 9h-4a2 2 0 00-2 2v6a2 2 0 002 2h4a2 2 0 002-2v-6a2 2 0 00-2-2z" />
+              </svg>
+              <span>形状</span>
+            </button>
+          </div>
+
+          {/* Tool-specific content */}
+          {activeTool === 'text' && <TextTab onAddText={handleAddText} />}
+
+          {activeTool === 'image' && <ImageTab onImageUpload={handleImageUpload} />}
+
+          {activeTool === 'shape' && <ShapeTab onShapeCreate={handleShapeCreate} />}
+        </div>
+
+        {/* Canvas */}
+        <div className="flex-1">
+          <Canvas onCanvasReady={handleCanvasReady} />
+        </div>
+
+        {/* Right Sidebar */}
+        <PropertyPanel canvas={canvasInstance} />
+      </div>
+    </div>
+  )
+}
