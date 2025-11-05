@@ -11,7 +11,8 @@ import { PropertyPanel } from '@/components/editor/PropertyPanel/PropertyPanel'
 import { useCanvas } from '@/hooks/useCanvas'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useToast } from '@/components/ui/Toast'
-import { CANVAS_SIZES, exportCanvas, copyToClipboard, downloadCanvas, resizeCanvas, setCanvasBackground, resetCanvasView } from '@/lib/fabric/canvas'
+import { ExportDialog, ExportOptions } from '@/components/editor/ExportDialog'
+import { CANVAS_SIZES, exportCanvas, copyToClipboard, downloadCanvas, resizeCanvas, setCanvasBackground, resetCanvasView, downloadCanvasImage } from '@/lib/fabric/canvas'
 import { DEFAULT_TEXT_PROPS } from '@/lib/constants/editor'
 import { createImageObject } from '@/lib/fabric/image'
 import { validateImageFile } from '@/lib/utils/fileValidation'
@@ -24,6 +25,7 @@ export default function EditorPage() {
   const [isDrawing, setIsDrawing] = useState(false)
   const [tempShape, setTempShape] = useState<fabric.Object | null>(null)
   const [drawStartPoint, setDrawStartPoint] = useState<{ x: number; y: number } | null>(null)
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const { setCanvas, addText } = useCanvas()
   const toast = useToast()
 
@@ -145,6 +147,24 @@ export default function EditorPage() {
       toast.success('图片已复制到剪贴板！')
     } catch (error) {
       toast.error('复制失败，请重试')
+    }
+  }
+
+  const handleExport = (options: ExportOptions) => {
+    if (!canvasInstance) {
+      toast.error('画布未初始化')
+      return
+    }
+
+    try {
+      downloadCanvasImage(canvasInstance, {
+        format: options.format,
+        quality: options.quality,
+        transparent: options.transparent,
+      })
+      toast.success('导出成功')
+    } catch (error) {
+      toast.error('导出失败，请重试')
     }
   }
 
@@ -274,8 +294,8 @@ export default function EditorPage() {
         currentBackground={canvasBackground}
         onSizeChange={setCanvasSize}
         onBackgroundChange={setBackgroundColor}
+        onOpenExportDialog={() => setIsExportDialogOpen(true)}
         onCopy={handleCopy}
-        onExport={handleExport}
       />
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
@@ -347,6 +367,13 @@ export default function EditorPage() {
         {/* Right Sidebar */}
         <PropertyPanel canvas={canvasInstance} />
       </div>
+
+      {/* 导出设置弹窗 */}
+      <ExportDialog
+        isOpen={isExportDialogOpen}
+        onClose={() => setIsExportDialogOpen(false)}
+        onExport={handleExport}
+      />
     </div>
   )
 }

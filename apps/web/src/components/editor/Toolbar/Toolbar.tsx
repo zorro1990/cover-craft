@@ -11,8 +11,8 @@ interface ToolbarProps {
   currentBackground: string
   onSizeChange: (size: CanvasSize) => void
   onBackgroundChange: (color: string) => void
+  onOpenExportDialog: () => void
   onCopy: () => void
-  onExport: (format: 'png' | 'jpeg') => void
 }
 
 export function Toolbar({
@@ -21,8 +21,8 @@ export function Toolbar({
   currentBackground,
   onSizeChange,
   onBackgroundChange,
+  onOpenExportDialog,
   onCopy,
-  onExport,
 }: ToolbarProps) {
   return (
     <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4">
@@ -45,16 +45,10 @@ export function Toolbar({
 
       <div className="flex items-center gap-2">
         <button
-          onClick={() => onExport('png')}
+          onClick={onOpenExportDialog}
           className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
         >
-          下载 PNG
-        </button>
-        <button
-          onClick={() => onExport('jpeg')}
-          className="px-3 py-1.5 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-        >
-          下载 JPEG
+          导出
         </button>
         <button
           onClick={onCopy}

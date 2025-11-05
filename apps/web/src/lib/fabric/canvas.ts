@@ -231,3 +231,85 @@ export function panCanvas(
     canvas.requestRenderAll()
   }
 }
+
+/**
+ * 导出画布为图片（支持倍率和透明背景）
+ * @param canvas Fabric.js Canvas 实例
+ * @param options 导出选项
+ * @returns DataURL 字符串
+ */
+export function exportCanvasImage(
+  canvas: fabric.Canvas | null,
+  options: {
+    format?: 'png' | 'jpeg'
+    quality?: number // 1x, 2x, 3x
+    transparent?: boolean
+  } = {}
+): string | null {
+  if (!canvas) {
+    logger.warn('Canvas is not initialized')
+    return null
+  }
+
+  const { format = 'png', quality = 1, transparent = false } = options
+
+  // 保存原始背景色
+  const originalBgColor = canvas.backgroundColor
+
+  // 如果需要透明背景，临时移除背景色
+  if (transparent && format === 'png') {
+    canvas.backgroundColor = ''
+  }
+
+  // 导出图片
+  const dataURL = canvas.toDataURL({
+    format: format === 'jpeg' ? 'jpeg' : 'png',
+    quality: 1, // Fabric.js 的 quality 参数（0-1）
+    multiplier: quality, // 倍率
+  })
+
+  // 恢复原始背景色
+  if (transparent && format === 'png') {
+    canvas.backgroundColor = originalBgColor
+    canvas.requestRenderAll()
+  }
+
+  return dataURL
+}
+
+/**
+ * 下载画布为图片文件
+ * @param canvas Fabric.js Canvas 实例
+ * @param options 导出选项
+ */
+export function downloadCanvasImage(
+  canvas: fabric.Canvas | null,
+  options: {
+    format?: 'png' | 'jpeg'
+    quality?: number
+    transparent?: boolean
+    filename?: string
+  } = {}
+) {
+  const dataURL = exportCanvasImage(canvas, options)
+  if (!dataURL) return
+
+  const { format = 'png', filename } = options
+
+  // 生成文件名：cover-YYYYMMDD-HHMMSS.png
+  const now = new Date()
+  const timestamp = now
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace('T', '-')
+    .slice(0, 15)
+  const defaultFilename = `cover-${timestamp}.${format}`
+
+  // 创建下载链接
+  const link = document.createElement('a')
+  link.download = filename || defaultFilename
+  link.href = dataURL
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
