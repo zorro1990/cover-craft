@@ -119,22 +119,6 @@ export default function EditorPage() {
     }
   }
 
-  const handleExport = (format: 'png' | 'jpeg') => {
-    if (!canvasInstance) {
-      toast.error('画布未初始化')
-      return
-    }
-
-    try {
-      // Convert 'jpeg' to 'jpg' for downloadCanvas compatibility
-      const downloadFormat = format === 'jpeg' ? 'jpg' : format
-      const filename = `cover-craft-${Date.now()}.${format}`
-      downloadCanvas(canvasInstance, filename, downloadFormat)
-    } catch (error) {
-      toast.error('导出失败，请重试')
-    }
-  }
-
   const handleCopy = async () => {
     if (!canvasInstance) {
       toast.error('画布未初始化')
