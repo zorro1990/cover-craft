@@ -9,6 +9,10 @@ import { ImageTab } from '@/components/editor/AssetPanel/ImageTab'
 import { ShapeTab } from '@/components/editor/AssetPanel/ShapeTab'
 import { PropertyPanel } from '@/components/editor/PropertyPanel/PropertyPanel'
 import { useCanvas } from '@/hooks/useCanvas'
+import { useCanvasStore } from '@/stores/canvasStore'
+import { useToast } from '@/components/ui/Toast'
+import { CANVAS_SIZES, exportCanvas, copyToClipboard, downloadCanvas, resizeCanvas, setCanvasBackground } from '@/lib/fabric/canvas'
+import { DEFAULT_TEXT_PROPS } from '@/lib/constants/editor'
 import { createImageObject } from '@/lib/fabric/image'
 import { validateImageFile } from '@/lib/utils/fileValidation'
 import { createRectangle, createCircle, createLine } from '@/lib/fabric/shape'
@@ -17,28 +21,48 @@ export default function EditorPage() {
   const [activeTool, setActiveTool] = useState('text')
   const [canvasInstance, setCanvasInstance] = useState<fabric.Canvas | null>(null)
   const { setCanvas, addText } = useCanvas()
+  const toast = useToast()
+
+  // Get state from store
+  const { currentSize, backgroundColor, setCanvasSize, setBackgroundColor } = useCanvasStore()
+
+  // Ensure we always have safe values for downstream consumers
+  const canvasSize = currentSize ?? CANVAS_SIZES[0]
+  const canvasBackground = backgroundColor ?? '#ffffff'
 
   const handleCanvasReady = (canvas: fabric.Canvas) => {
     setCanvas(canvas)
     setCanvasInstance(canvas)
+
+    // Sync canvas with store
+    resizeCanvas(canvas, canvasSize, false)
+    setCanvasBackground(canvas, canvasBackground)
   }
+
+  // Watch for store changes and update canvas
+  useEffect(() => {
+    if (!canvasInstance || !canvasSize) return
+
+    resizeCanvas(canvasInstance, canvasSize, true)
+  }, [canvasInstance, canvasSize])
+
+  useEffect(() => {
+    if (!canvasInstance || !canvasBackground) return
+
+    setCanvasBackground(canvasInstance, canvasBackground)
+  }, [canvasInstance, canvasBackground])
 
   const handleToolChange = (tool: string) => {
     setActiveTool(tool)
   }
 
   const handleAddText = () => {
-    addText({
-      text: '双击编辑文字',
-      fontSize: 24,
-      fontFamily: 'Arial',
-      fill: '#000000',
-    })
+    addText(DEFAULT_TEXT_PROPS)
   }
 
   const handleImageUpload = async (file: File) => {
     if (!canvasInstance) {
-      alert('画布未初始化')
+      toast.error('画布未初始化')
       return
     }
 
@@ -48,7 +72,7 @@ export default function EditorPage() {
     })
 
     if (!validation.valid) {
-      alert(validation.error)
+      toast.error(validation.error || '文件校验失败')
       return
     }
 
@@ -60,16 +84,15 @@ export default function EditorPage() {
       // Store file size for display
       ;(imageObject as any).fileSize = file.size
 
-      alert('图片上传成功！')
+      toast.success('图片上传成功！')
     } catch (error) {
-      console.error('Image upload error:', error)
-      alert('图片上传失败，请重试')
+      toast.error('图片上传失败，请重试')
     }
   }
 
   const handleShapeCreate = (shapeType: 'rectangle' | 'circle' | 'line') => {
     if (!canvasInstance) {
-      alert('画布未初始化')
+      toast.error('画布未初始化')
       return
     }
 
@@ -86,8 +109,38 @@ export default function EditorPage() {
           break
       }
     } catch (error) {
-      console.error('Shape creation error:', error)
-      alert('形状创建失败，请重试')
+      toast.error('形状创建失败，请重试')
+    }
+  }
+
+  const handleExport = (format: 'png' | 'jpeg') => {
+    if (!canvasInstance) {
+      toast.error('画布未初始化')
+      return
+    }
+
+    try {
+      // Convert 'jpeg' to 'jpg' for downloadCanvas compatibility
+      const downloadFormat = format === 'jpeg' ? 'jpg' : format
+      const filename = `cover-craft-${Date.now()}.${format}`
+      downloadCanvas(canvasInstance, filename, downloadFormat)
+    } catch (error) {
+      toast.error('导出失败，请重试')
+    }
+  }
+
+  const handleCopy = async () => {
+    if (!canvasInstance) {
+      toast.error('画布未初始化')
+      return
+    }
+
+    try {
+      const dataUrl = exportCanvas(canvasInstance, { format: 'png' })
+      await copyToClipboard(dataUrl)
+      toast.success('图片已复制到剪贴板！')
+    } catch (error) {
+      toast.error('复制失败，请重试')
     }
   }
 
@@ -124,7 +177,15 @@ export default function EditorPage() {
 
   return (
     <div className="h-screen flex flex-col">
-      <Toolbar />
+      <Toolbar
+        sizes={CANVAS_SIZES}
+        currentSize={canvasSize}
+        currentBackground={canvasBackground}
+        onSizeChange={setCanvasSize}
+        onBackgroundChange={setBackgroundColor}
+        onCopy={handleCopy}
+        onExport={handleExport}
+      />
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
         <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -184,7 +245,12 @@ export default function EditorPage() {
 
         {/* Canvas */}
         <div className="flex-1">
-          <Canvas onCanvasReady={handleCanvasReady} />
+          <Canvas
+            width={canvasSize.width}
+            height={canvasSize.height}
+            backgroundColor={canvasBackground}
+            onCanvasReady={handleCanvasReady}
+          />
         </div>
 
         {/* Right Sidebar */}

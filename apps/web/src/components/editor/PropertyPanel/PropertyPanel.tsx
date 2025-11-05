@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { fabric } from 'fabric'
+import { TextProperties } from './TextProperties'
+import { ImageProperties } from './ImageProperties'
+import { ShapeProperties } from './ShapeProperties'
 
 interface PropertyPanelProps {
   canvas: fabric.Canvas | null
@@ -91,47 +94,26 @@ export function PropertyPanel({ canvas }: PropertyPanelProps) {
             </div>
           </div>
 
+          {/* Dynamic property editor based on selected object type */}
           {selectedObject.type === 'text' && (
-            <div className="bg-gray-50 p-3 rounded">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">文本属性</h3>
-              <div className="text-sm space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">内容:</span>
-                  <span className="font-medium">
-                    {/* @ts-ignore */}
-                    {(selectedObject as fabric.Text).text?.substring(0, 20) || ''}
-                    {/* @ts-ignore */}
-                    {(selectedObject as fabric.Text).text?.length > 20 ? '...' : ''}
-                  </span>
-                </div>
-                {(selectedObject as fabric.Text).fontSize && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">字号:</span>
-                    <span className="font-medium">{(selectedObject as fabric.Text).fontSize}px</span>
-                  </div>
-                )}
-                {(selectedObject as fabric.Text).fontFamily && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">字体:</span>
-                    <span className="font-medium">{(selectedObject as fabric.Text).fontFamily}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            <TextProperties
+              textObject={selectedObject as fabric.Text}
+              onChange={() => canvas.renderAll()}
+            />
           )}
 
-          {(selectedObject as any).fill && (
-            <div className="bg-gray-50 p-3 rounded">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">样式</h3>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">填充:</span>
-                <div
-                  className="w-6 h-6 rounded border border-gray-300"
-                  style={{ backgroundColor: (selectedObject as any).fill }}
-                />
-                <span className="text-sm font-medium">{(selectedObject as any).fill}</span>
-              </div>
-            </div>
+          {selectedObject.type === 'image' && (
+            <ImageProperties
+              imageObject={selectedObject as fabric.Image}
+              onChange={() => canvas.renderAll()}
+            />
+          )}
+
+          {['rect', 'circle', 'line'].includes(selectedObject.type || '') && (
+            <ShapeProperties
+              shapeObject={selectedObject}
+              onChange={() => canvas.renderAll()}
+            />
           )}
         </div>
       )}

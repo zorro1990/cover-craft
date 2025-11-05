@@ -4,8 +4,8 @@
 
 本报告记录了 Cover Craft AI 项目的开发进度，按照 BMAD 工作方法进行。
 
-**报告日期**: 2025-11-02
-**开发阶段**: Epic 1 迭代 1 完成
+**报告日期**: 2025-11-03
+**开发阶段**: Epic 1 迭代 1 完成 + 编辑器联动优化
 **项目状态**: 进行中
 
 ---
@@ -175,7 +175,120 @@
 
 ---
 
-### 4. 测试系统 ✅
+### 4. 编辑器联动优化 ✅
+
+**完成日期**: 2025-11-03
+
+本次优化实现了编辑器各组件之间的数据联动，提升了用户体验和代码可维护性：
+
+#### 4.1 状态管理联动
+- [x] **Store 集成** (`src/stores/canvasStore.ts`)
+  - 统一管理画布尺寸和背景色状态
+  - 通过 Zustand 实现响应式状态更新
+  - 所有组件通过 Store 获取最新状态
+
+#### 4.2 Toolbar 组件重构
+- [x] **尺寸选择器** (`src/components/editor/Toolbar/SizeSelector.tsx`)
+  - 改为受控组件，接收 props
+  - 移除直接依赖 Store
+  - 点击时调用 onSizeChange 回调
+
+- [x] **背景选择器** (`src/components/editor/Toolbar/BackgroundSelector.tsx`)
+  - 改为受控组件，接收 props
+  - 移除直接依赖 Store
+  - 点击时调用 onBackgroundChange 回调
+
+- [x] **工具栏整合** (`src/components/editor/Toolbar/Toolbar.tsx`)
+  - 接收所有相关 props
+  - 布局调整：尺寸/背景选择器位于左侧
+  - 导出/复制按钮位于右侧
+  - 移除本地状态依赖
+
+#### 4.3 Canvas 组件响应式改造
+- [x] **动态属性** (`src/components/editor/Canvas/Canvas.tsx`)
+  - 接收 width, height, backgroundColor props
+  - 初始化时使用传入参数
+  - 响应 props 变化，自动调整画布
+
+- [x] **同步机制**
+  - useEffect 监听尺寸变化，调用 resizeCanvas
+  - useEffect 监听背景色变化，调用 setCanvasBackground
+  - 尺寸变化时保持内容比例
+
+#### 4.4 编辑器页面联动
+- [x] **状态同步** (`src/app/editor/page.tsx`)
+  - 引入 useCanvasStore 获取状态
+  - handleCanvasReady 中同步初始状态
+  - useEffect 监听 Store 变化并更新 Canvas
+
+- [x] **集中导出逻辑**
+  - handleExport(format) 函数集中导出逻辑
+  - 使用 downloadCanvas 工具函数
+  - 错误处理和用户提示
+
+- [x] **集中复制逻辑**
+  - handleCopy() 函数集中复制逻辑
+  - 使用 exportCanvas 和 copyToClipboard 工具
+  - 异步处理和错误捕获
+
+#### 4.5 属性面板增强
+- [x] **动态属性编辑器** (`src/components/editor/PropertyPanel/PropertyPanel.tsx`)
+  - 根据选中对象类型渲染相应属性组件
+  - 文本对象 → TextProperties
+  - 图片对象 → ImageProperties
+  - 形状对象（矩形/圆形/直线）→ ShapeProperties
+  - 保留对象信息展示区域
+
+#### 4.6 属性组件优化
+- [x] **TextProperties** (`src/components/editor/PropertyPanel/TextProperties.tsx`)
+  - updateProperty 后自动调用 canvas.renderAll()
+  - 完整支持文字内容、字体、样式、颜色等属性编辑
+
+- [x] **ImageProperties** (`src/components/editor/PropertyPanel/ImageProperties.tsx`)
+  - 支持图片尺寸、透明度、旋转角度调整
+  - 使用原始尺寸保持图片质量
+
+- [x] **ShapeProperties** (`src/components/editor/PropertyPanel/ShapeProperties.tsx`)
+  - 支持矩形、圆形、直线属性编辑
+  - 填充色、边框色、边框宽度、透明度等
+
+#### 4.7 工具函数完善
+- [x] **Canvas 工具增强** (`src/lib/fabric/canvas.ts`)
+  - exportCanvas: 统一导出接口
+  - copyToClipboard: 改进剪贴板复制实现
+  - downloadCanvas: 统一下载接口
+  - resizeCanvas: 尺寸调整工具
+  - setCanvasBackground: 背景色设置工具
+
+#### 4.8 测试覆盖
+- [x] **Store 测试增强** (`tests/stores/canvasStore.test.ts`)
+  - 新增所有尺寸切换测试
+  - 新增多种背景色切换测试
+  - 确保状态更新的正确性
+
+- [x] **集成测试扩展** (`tests/integration/editor-workflow.test.tsx`)
+  - 新增画布尺寸切换场景
+  - 新增背景色切换场景
+  - 新增导出功能测试
+  - 新增复制功能测试
+  - Mock 所有相关依赖
+
+**架构改进**:
+- ✅ 单向数据流：Store → 组件 → Canvas
+- ✅ 受控组件模式：所有 UI 组件接收 props
+- ✅ 集中状态管理：避免状态分散
+- ✅ 职责分离：每层组件职责清晰
+- ✅ 易于测试：Mock 依赖简单
+
+**用户体验提升**:
+- ✅ 实时尺寸切换
+- ✅ 实时背景色切换
+- ✅ 对象属性实时编辑
+- ✅ 统一的导出/复制体验
+
+---
+
+### 5. 测试系统 ✅
 
 #### 4.1 测试配置
 - [x] Jest 配置

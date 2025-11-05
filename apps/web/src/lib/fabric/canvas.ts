@@ -1,4 +1,5 @@
 import { fabric } from 'fabric'
+import { logger } from '@/lib/utils/logger'
 import type { CanvasConfig, CanvasSize } from '@cover-craft/shared-types'
 
 export const CANVAS_SIZES: CanvasSize[] = [
@@ -48,6 +49,20 @@ export function resizeCanvas(
   size: CanvasSize,
   preserveContent: boolean = true
 ) {
+  if (!canvas) {
+    logger.warn('Canvas is not initialized')
+    return
+  }
+
+  if (
+    !size ||
+    typeof size.width !== 'number' ||
+    typeof size.height !== 'number'
+  ) {
+    logger.warn('Invalid canvas size provided to resizeCanvas')
+    return
+  }
+
   const oldWidth = canvas.getWidth()
   const oldHeight = canvas.getHeight()
 
@@ -76,6 +91,11 @@ export function setCanvasBackground(
   canvas: fabric.Canvas,
   color: string
 ) {
+  if (!canvas) {
+    logger.warn('Canvas is not initialized')
+    return
+  }
+
   canvas.setBackgroundColor(color, () => {
     canvas.renderAll()
   })
@@ -90,6 +110,11 @@ export function exportCanvas(
     enableRetinaScaling?: boolean
   } = {}
 ): string {
+  if (!canvas) {
+    logger.warn('Canvas is not initialized')
+    return ''
+  }
+
   const {
     format = 'png',
     quality = 1,
@@ -127,6 +152,11 @@ export function downloadCanvas(
   filename: string = `cover-${Date.now()}.png`,
   format: 'png' | 'jpg' = 'png'
 ) {
+  if (!canvas) {
+    logger.warn('Canvas is not initialized')
+    return
+  }
+
   const dataUrl = exportCanvas(canvas, { format })
   const link = document.createElement('a')
   link.download = filename

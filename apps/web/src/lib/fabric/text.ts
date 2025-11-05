@@ -29,7 +29,7 @@ export interface TextOutline {
 export interface TextFormattingOptions {
   underline?: boolean
   linethrough?: boolean
-  shadow?: TextShadow
+  shadow?: TextShadow | string | fabric.Shadow | undefined
   gradient?: GradientFill | null
   outline?: TextOutline | null
 }
@@ -150,11 +150,15 @@ export function toggleLinethrough(textObject: fabric.Text) {
  */
 export function setTextShadow(
   textObject: fabric.Text,
-  shadow: TextShadow | null
+  shadow: TextShadow | string | fabric.Shadow | null | undefined
 ) {
   if (!shadow) {
-    textObject.set('shadow', null)
-  } else {
+    textObject.set('shadow', undefined)
+  } else if (typeof shadow === 'string') {
+    // Handle string shadow
+    textObject.set('shadow', shadow)
+  } else if ('color' in shadow && 'blur' in shadow && 'offsetX' in shadow && 'offsetY' in shadow) {
+    // Handle TextShadow object
     // @ts-ignore - fabric.Shadow constructor
     const fabricShadow = new fabric.Shadow({
       color: shadow.color,
@@ -163,6 +167,9 @@ export function setTextShadow(
       offsetY: shadow.offsetY,
     })
     textObject.set('shadow', fabricShadow)
+  } else {
+    // Handle fabric.Shadow object
+    textObject.set('shadow', shadow)
   }
   textObject.setCoords()
 }
@@ -171,7 +178,7 @@ export function setTextShadow(
  * Remove text shadow
  */
 export function removeTextShadow(textObject: fabric.Text) {
-  textObject.set('shadow', null)
+  textObject.set('shadow', undefined)
   textObject.setCoords()
 }
 
@@ -214,7 +221,7 @@ export function setTextOutline(
   outline: TextOutline | null
 ) {
   if (!outline) {
-    textObject.set('stroke', null)
+    textObject.set('stroke', undefined)
     textObject.set('strokeWidth', 0)
     textObject.setCoords()
     return
@@ -229,7 +236,7 @@ export function setTextOutline(
  * Remove text outline
  */
 export function removeTextOutline(textObject: fabric.Text) {
-  textObject.set('stroke', null)
+  textObject.set('stroke', undefined)
   textObject.set('strokeWidth', 0)
   textObject.setCoords()
 }

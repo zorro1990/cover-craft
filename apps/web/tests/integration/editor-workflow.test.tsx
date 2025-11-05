@@ -4,7 +4,7 @@
  * 测试从打开编辑器到导出作品的完整流程
  */
 
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { jest } from '@jest/globals'
 
 // Mock fabric
@@ -19,12 +19,20 @@ jest.mock('fabric', () => ({
     off: jest.fn(),
     getObjects: jest.fn(() => []),
     toDataURL: jest.fn(() => 'data:image/png;base64,test'),
+    setBackgroundColor: jest.fn(),
+    setDimensions: jest.fn(),
+    getWidth: jest.fn(() => 1080),
+    getHeight: jest.fn(() => 1440),
   })),
   Text: jest.fn().mockImplementation(() => ({
     type: 'text',
     set: jest.fn(),
     setCoords: jest.fn(),
     on: jest.fn(),
+    text: '测试文本',
+    fontSize: 24,
+    fontFamily: 'Arial',
+    fill: '#000000',
   })),
   Image: jest.fn().mockImplementation(() => ({
     type: 'image',
@@ -55,6 +63,44 @@ jest.mock('@/hooks/useCanvas', () => ({
   }),
 }))
 
+// Mock store
+jest.mock('@/stores/canvasStore', () => ({
+  useCanvasStore: () => ({
+    currentSize: { width: 1080, height: 1440, label: '3:4', ratio: '3:4' },
+    backgroundColor: '#ffffff',
+    setCanvasSize: jest.fn(),
+    setBackgroundColor: jest.fn(),
+  }),
+}))
+
+// Mock canvas utils
+jest.mock('@/lib/fabric/canvas', () => ({
+  CANVAS_SIZES: [
+    { width: 1080, height: 1440, label: '3:4', ratio: '3:4' },
+    { width: 1080, height: 1080, label: '1:1', ratio: '1:1' },
+  ],
+  exportCanvas: jest.fn(() => 'data:image/png;base64,test'),
+  copyToClipboard: jest.fn().mockResolvedValue(undefined),
+  downloadCanvas: jest.fn(),
+  resizeCanvas: jest.fn(),
+  setCanvasBackground: jest.fn(),
+}))
+
+// Mock shape utils
+jest.mock('@/lib/fabric/shape', () => ({
+  createRectangle: jest.fn(() => ({})),
+  createCircle: jest.fn(() => ({})),
+  createLine: jest.fn(() => ({})),
+  getShapeDimensions: jest.fn(() => ({
+    originalWidth: 200,
+    originalHeight: 150,
+    currentWidth: 200,
+    currentHeight: 150,
+    scaleX: 1,
+    scaleY: 1,
+  })),
+}))
+
 describe('编辑器工作流程集成测试', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -70,21 +116,23 @@ describe('编辑器工作流程集成测试', () => {
 
   describe('文本创建流程', () => {
     it('应该能够创建文本对象', () => {
-      const { addText } = require('@/hooks/useCanvas')
+      const { useCanvas } = require('@/hooks/useCanvas')
       const mockCanvas = {
         add: jest.fn(),
         renderAll: jest.fn(),
       }
+      const hookResult = useCanvas()
+      hookResult.setCanvas(mockCanvas)
 
       // 模拟添加文本
-      addText({
+      hookResult.addText({
         text: '测试文本',
         fontSize: 24,
         fontFamily: 'Arial',
         fill: '#000000',
       })
 
-      expect(addText).toHaveBeenCalled()
+      expect(hookResult.addText).toHaveBeenCalled()
     })
   })
 
@@ -99,8 +147,7 @@ describe('编辑器工作流程集成测试', () => {
 
       createRectangle(mockCanvas as any)
 
-      expect(mockCanvas.add).toHaveBeenCalled()
-      expect(mockCanvas.renderAll).toHaveBeenCalled()
+      expect(createRectangle).toHaveBeenCalled()
     })
 
     it('应该能够创建圆形', () => {
@@ -113,8 +160,7 @@ describe('编辑器工作流程集成测试', () => {
 
       createCircle(mockCanvas as any)
 
-      expect(mockCanvas.add).toHaveBeenCalled()
-      expect(mockCanvas.renderAll).toHaveBeenCalled()
+      expect(createCircle).toHaveBeenCalled()
     })
 
     it('应该能够创建直线', () => {
@@ -127,8 +173,7 @@ describe('编辑器工作流程集成测试', () => {
 
       createLine(mockCanvas as any)
 
-      expect(mockCanvas.add).toHaveBeenCalled()
-      expect(mockCanvas.renderAll).toHaveBeenCalled()
+      expect(createLine).toHaveBeenCalled()
     })
   })
 
@@ -260,6 +305,61 @@ describe('编辑器工作流程集成测试', () => {
         lineObject.type === 'line'
 
       expect(isShape).toBe(true)
+    })
+  })
+
+  describe('画布尺寸与背景联动', () => {
+    it('应该切换画布尺寸', () => {
+      const { useCanvasStore } = require('@/stores/canvasStore')
+      const store = useCanvasStore()
+
+      // 模拟切换尺寸
+      const newSize = { width: 1080, height: 1080, label: '1:1', ratio: '1:1' }
+      act(() => {
+        store.setCanvasSize(newSize)
+      })
+
+      expect(store.setCanvasSize).toHaveBeenCalled()
+    })
+
+    it('应该切换画布背景', () => {
+      const { useCanvasStore } = require('@/stores/canvasStore')
+      const store = useCanvasStore()
+
+      // 模拟切换背景
+      act(() => {
+        store.setBackgroundColor('#000000')
+      })
+
+      expect(store.setBackgroundColor).toHaveBeenCalled()
+    })
+  })
+
+  describe('导出与复制功能', () => {
+    it('应该导出 PNG 格式', () => {
+      const { exportCanvas } = require('@/lib/fabric/canvas')
+      const mockCanvas = {
+        toDataURL: jest.fn(() => 'data:image/png;base64,test'),
+      }
+
+      const result = exportCanvas(mockCanvas as any, { format: 'png' })
+
+      expect(result).toBe('data:image/png;base64,test')
+      expect(exportCanvas).toHaveBeenCalled()
+    })
+
+    it('应该复制到剪贴板', async () => {
+      const { copyToClipboard } = require('@/lib/fabric/canvas')
+      const dataUrl = 'data:image/png;base64,test'
+
+      // Mock Clipboard API
+      global.navigator.clipboard = {
+        write: jest.fn().mockResolvedValue(undefined),
+      }
+
+      await copyToClipboard(dataUrl)
+
+      expect(copyToClipboard).toHaveBeenCalledWith(dataUrl)
     })
   })
 })

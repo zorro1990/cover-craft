@@ -64,7 +64,8 @@ export function ShapeProperties({ shapeObject, onChange }: ShapePropertiesProps)
               value={width}
               onChange={(value) => {
                 setWidth(value)
-                const scaleX = value / (shapeObject.width || 1)
+                const originalWidth = shapeObject?.width || 200
+                const scaleX = value / originalWidth
                 updateProperty('scaleX', scaleX)
               }}
               min={10}
@@ -79,7 +80,8 @@ export function ShapeProperties({ shapeObject, onChange }: ShapePropertiesProps)
               value={height}
               onChange={(value) => {
                 setHeight(value)
-                const scaleY = value / (shapeObject.height || 1)
+                const originalHeight = shapeObject?.height || 150
+                const scaleY = value / originalHeight
                 updateProperty('scaleY', scaleY)
               }}
               min={10}

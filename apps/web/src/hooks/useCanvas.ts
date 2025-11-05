@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { fabric } from 'fabric'
+import { logger } from '@/lib/utils/logger'
 import { createTextObject } from '@/lib/fabric/objects'
 
 export function useCanvas() {
@@ -9,14 +10,14 @@ export function useCanvas() {
 
   const addText = (options: any = {}) => {
     if (!canvas) {
-      console.error('Canvas not initialized')
+      logger.warn('Canvas not initialized')
       return
     }
 
     try {
       createTextObject(canvas, options)
     } catch (error) {
-      console.error('Failed to add text:', error)
+      logger.error('Failed to add text')
     }
   }
 

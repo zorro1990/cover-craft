@@ -59,7 +59,7 @@ export function ImageProperties({ imageObject, onChange }: ImagePropertiesProps)
               value={width}
               onChange={(value) => {
                 setWidth(value)
-                const originalWidth = (imageObject as any).originalWidth || imageObject.width || 1
+                const originalWidth = imageObject ? ((imageObject as any).originalWidth || imageObject.width || 200) : 200
                 const scaleX = value / originalWidth
                 updateProperty('scaleX', scaleX)
               }}
@@ -75,7 +75,7 @@ export function ImageProperties({ imageObject, onChange }: ImagePropertiesProps)
               value={height}
               onChange={(value) => {
                 setHeight(value)
-                const originalHeight = (imageObject as any).originalHeight || imageObject.height || 1
+                const originalHeight = imageObject ? ((imageObject as any).originalHeight || imageObject.height || 200) : 200
                 const scaleY = value / originalHeight
                 updateProperty('scaleY', scaleY)
               }}
