@@ -13,20 +13,25 @@ const mockCanvas = {
 }
 
 jest.mock('fabric', () => ({
-  Canvas: jest.fn().mockImplementation(() => mockCanvas),
-  Text: jest.fn().mockImplementation(function (text: string, props: any) {
-    return {
-      type: 'text',
-      text,
-      left: props.left || 0,
-      top: props.top || 0,
-      fontSize: props.fontSize || 24,
-      fontFamily: props.fontFamily || 'Arial',
-      fill: props.fill || '#000000',
-      set: jest.fn(),
-      setCoords: jest.fn(),
-    }
-  }),
+  fabric: {
+    Canvas: jest.fn().mockImplementation(() => mockCanvas),
+    Text: jest.fn().mockImplementation(function (this: any, text: string, props: any) {
+      Object.assign(this, {
+        type: 'text',
+        text,
+        left: props.left || 0,
+        top: props.top || 0,
+        fontSize: props.fontSize || 24,
+        fontFamily: props.fontFamily || 'Arial',
+        fill: props.fill || '#000000',
+        originX: props.originX || 'left',
+        originY: props.originY || 'top',
+        set: jest.fn(),
+        setCoords: jest.fn(),
+      })
+      return this
+    }),
+  },
 }))
 
 describe('fabric objects', () => {

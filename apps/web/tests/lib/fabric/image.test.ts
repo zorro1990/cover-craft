@@ -20,7 +20,7 @@ describe('fabric image utilities', () => {
 
   describe('getImageDimensions', () => {
     it('should calculate dimensions with scale', () => {
-      const dimensions = getImageObject(mockImageObject as any)
+      const dimensions = getImageDimensions(mockImageObject as any)
       expect(dimensions.originalWidth).toBe(1000)
       expect(dimensions.originalHeight).toBe(800)
       expect(dimensions.currentWidth).toBe(500)
@@ -35,7 +35,7 @@ describe('fabric image utilities', () => {
         scaleX: 1,
         scaleY: 1,
       }
-      const dimensions = getImageObject(mockObj as any)
+      const dimensions = getImageDimensions(mockObj as any)
       expect(dimensions.originalWidth).toBe(1000)
       expect(dimensions.originalHeight).toBe(800)
     })
@@ -49,7 +49,7 @@ describe('fabric image utilities', () => {
         scaleX: undefined,
         scaleY: undefined,
       }
-      const dimensions = getImageObject(mockObj as any)
+      const dimensions = getImageDimensions(mockObj as any)
       expect(dimensions.scale).toBe(1)
     })
   })
@@ -72,8 +72,11 @@ describe('fabric image utilities', () => {
 
       const result = resetImageSize(mockObj as any)
 
-      expect(mockObj.set).toHaveBeenCalledWith('scaleX', 1)
-      expect(mockObj.set).toHaveBeenCalledWith('scaleY', 1)
+      // 实际代码使用 set({ scaleX: 1, scaleY: 1 })，而非两次单独调用
+      expect(mockObj.set).toHaveBeenCalledWith({
+        scaleX: 1,
+        scaleY: 1,
+      })
       expect(mockObj.setCoords).toHaveBeenCalled()
       expect(mockObj.canvas.renderAll).toHaveBeenCalled()
       expect(result.originalWidth).toBe(2000)
