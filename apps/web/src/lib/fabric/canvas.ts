@@ -165,3 +165,69 @@ export function downloadCanvas(
   link.click()
   document.body.removeChild(link)
 }
+
+/**
+ * 设置画布缩放级别
+ * @param canvas Fabric.js Canvas 实例
+ * @param zoom 缩放级别（1 = 100%）
+ * @param point 缩放中心点（可选，默认为画布中心）
+ */
+export function setCanvasZoom(
+  canvas: fabric.Canvas | null,
+  zoom: number,
+  point?: { x: number; y: number }
+) {
+  if (!canvas) {
+    logger.warn('Canvas is not initialized')
+    return
+  }
+
+  // 限制缩放范围 0.1x - 5x
+  const clampedZoom = Math.max(0.1, Math.min(5, zoom))
+
+  if (point) {
+    canvas.zoomToPoint(new fabric.Point(point.x, point.y), clampedZoom)
+  } else {
+    canvas.setZoom(clampedZoom)
+  }
+
+  canvas.requestRenderAll()
+}
+
+/**
+ * 重置画布视图（100% 缩放，居中）
+ * @param canvas Fabric.js Canvas 实例
+ */
+export function resetCanvasView(canvas: fabric.Canvas | null) {
+  if (!canvas) {
+    logger.warn('Canvas is not initialized')
+    return
+  }
+
+  canvas.setViewportTransform([1, 0, 0, 1, 0, 0])
+  canvas.requestRenderAll()
+}
+
+/**
+ * 平移画布视图
+ * @param canvas Fabric.js Canvas 实例
+ * @param deltaX X 轴偏移量
+ * @param deltaY Y 轴偏移量
+ */
+export function panCanvas(
+  canvas: fabric.Canvas | null,
+  deltaX: number,
+  deltaY: number
+) {
+  if (!canvas) {
+    logger.warn('Canvas is not initialized')
+    return
+  }
+
+  const vpt = canvas.viewportTransform
+  if (vpt) {
+    vpt[4] += deltaX
+    vpt[5] += deltaY
+    canvas.requestRenderAll()
+  }
+}
