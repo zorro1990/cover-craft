@@ -15,11 +15,15 @@ import { CANVAS_SIZES, exportCanvas, copyToClipboard, downloadCanvas, resizeCanv
 import { DEFAULT_TEXT_PROPS } from '@/lib/constants/editor'
 import { createImageObject } from '@/lib/fabric/image'
 import { validateImageFile } from '@/lib/utils/fileValidation'
-import { createRectangle, createCircle, createLine } from '@/lib/fabric/shape'
+import { createRectangle, createCircle, createLine, startDragDrawShape, updateDragDrawShape, finishDragDrawShape } from '@/lib/fabric/shape'
 
 export default function EditorPage() {
   const [activeTool, setActiveTool] = useState('text')
   const [canvasInstance, setCanvasInstance] = useState<fabric.Canvas | null>(null)
+  const [drawMode, setDrawMode] = useState<'none' | 'rectangle' | 'circle' | 'line'>('none')
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [tempShape, setTempShape] = useState<fabric.Object | null>(null)
+  const [drawStartPoint, setDrawStartPoint] = useState<{ x: number; y: number } | null>(null)
   const { setCanvas, addText } = useCanvas()
   const toast = useToast()
 
@@ -188,6 +192,79 @@ export default function EditorPage() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [canvasInstance, toast])
+
+  // 形状绘制快捷键 (R/O/L)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 如果正在编辑文本，不触发快捷键
+      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') {
+        return
+      }
+
+      switch (e.key.toLowerCase()) {
+        case 'r':
+          setDrawMode('rectangle')
+          toast.info('矩形绘制模式：在画布上拖拽绘制')
+          break
+        case 'o':
+          setDrawMode('circle')
+          toast.info('圆形绘制模式：在画布上拖拽绘制')
+          break
+        case 'l':
+          setDrawMode('line')
+          toast.info('直线绘制模式：在画布上拖拽绘制')
+          break
+        case 'escape':
+          if (drawMode !== 'none') {
+            setDrawMode('none')
+            toast.info('已退出绘制模式')
+          }
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [drawMode, toast])
+
+  // 画布绘制事件监听
+  useEffect(() => {
+    if (!canvasInstance || drawMode === 'none') return
+
+    const handleMouseDown = (opt: fabric.IEvent) => {
+      const pointer = canvasInstance.getPointer(opt.e)
+      setIsDrawing(true)
+      setDrawStartPoint(pointer)
+      const shape = startDragDrawShape(canvasInstance, drawMode, pointer)
+      setTempShape(shape)
+    }
+
+    const handleMouseMove = (opt: fabric.IEvent) => {
+      if (!isDrawing || !tempShape || !drawStartPoint) return
+      const pointer = canvasInstance.getPointer(opt.e)
+      updateDragDrawShape(tempShape, drawMode, drawStartPoint, pointer)
+    }
+
+    const handleMouseUp = () => {
+      if (!isDrawing || !tempShape) return
+      finishDragDrawShape(canvasInstance, tempShape, drawMode)
+      setIsDrawing(false)
+      setTempShape(null)
+      setDrawStartPoint(null)
+      setDrawMode('none')
+      toast.success('形状已创建')
+    }
+
+    canvasInstance.on('mouse:down', handleMouseDown)
+    canvasInstance.on('mouse:move', handleMouseMove)
+    canvasInstance.on('mouse:up', handleMouseUp)
+
+    return () => {
+      canvasInstance.off('mouse:down', handleMouseDown)
+      canvasInstance.off('mouse:move', handleMouseMove)
+      canvasInstance.off('mouse:up', handleMouseUp)
+    }
+  }, [canvasInstance, drawMode, isDrawing, tempShape, drawStartPoint, toast])
 
   return (
     <div className="h-screen flex flex-col">
