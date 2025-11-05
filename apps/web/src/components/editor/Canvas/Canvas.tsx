@@ -63,7 +63,7 @@ export function Canvas({
       let lastPosY = 0
 
       canvas.on('mouse:down', (opt) => {
-        const evt = opt.e as MouseEvent
+        const evt = opt.e as MouseEvent & { spaceKey?: boolean }
         if (evt.spaceKey || evt.button === 1) { // 空格键或中键
           isPanning = true
           canvas.selection = false
