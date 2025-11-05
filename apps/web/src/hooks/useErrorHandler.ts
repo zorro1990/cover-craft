@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react'
 import { useNotification } from './useNotification'
+import { logger } from '@/lib/utils/logger'
 
 interface ErrorInfo {
   message: string
@@ -33,7 +34,7 @@ export function useErrorHandler() {
             }
 
       // 记录错误
-      console.error('[Error]', errorInfo)
+      logger.error('[Error]', errorInfo)
 
       // 显示通知
       if (options?.showNotification !== false) {
@@ -56,7 +57,7 @@ export function useErrorHandler() {
 
   const handleWarning = useCallback(
     (message: string, title?: string) => {
-      console.warn('[Warning]', message)
+      logger.warn('[Warning]', message)
       showWarning(title || '注意', message)
     },
     [showWarning]
@@ -116,7 +117,7 @@ function reportError(errorInfo: ErrorInfo) {
   // 这里可以集成 Sentry、LogRocket 等错误监控服务
   // 示例：
   // Sentry.captureException(error)
-  console.log('[Error Report]', errorInfo)
+  logger.info('[Error Report]', errorInfo)
 }
 
 /**

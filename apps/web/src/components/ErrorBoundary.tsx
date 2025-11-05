@@ -2,6 +2,7 @@
 
 import { Component, ReactNode } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { logger } from '@/lib/utils/logger'
 
 interface Props {
   children: ReactNode
@@ -31,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error('错误边界捕获到错误:', error, errorInfo)
+    logger.error('错误边界捕获到错误:', error, errorInfo)
   }
 
   handleReset = () => {

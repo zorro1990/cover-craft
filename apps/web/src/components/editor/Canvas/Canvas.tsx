@@ -32,14 +32,22 @@ export function Canvas({
     if (!canvasRef.current) return
 
     try {
+      // 使用固定默认值初始化，避免依赖 props
       const canvas = new fabric.Canvas(canvasRef.current, {
-        width: safeWidth,
-        height: safeHeight,
-        backgroundColor: safeBackgroundColor,
+        width: 1080,
+        height: 1440,
+        backgroundColor: '#ffffff',
         selection: true,
       })
 
       canvasInstanceRef.current = canvas
+
+      // 初始化后立即应用 props（如果提供了非默认值）
+      if (width && width !== 1080) canvas.setWidth(width)
+      if (height && height !== 1440) canvas.setHeight(height)
+      if (backgroundColor && backgroundColor !== '#ffffff') {
+        canvas.setBackgroundColor(backgroundColor, () => canvas.renderAll())
+      }
 
       if (onCanvasReady) {
         onCanvasReady(canvas)
@@ -98,7 +106,9 @@ export function Canvas({
     } catch (error) {
       logger.error('Failed to initialize canvas')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onCanvasReady])
+  // 注意：width/height/backgroundColor 仅在初始化时使用，不应触发重新初始化
 
   // ========== 新增：空格键监听 ==========
   useEffect(() => {

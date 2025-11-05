@@ -4,6 +4,8 @@
  * 提供防抖、节流、延迟加载等功能来优化应用性能
  */
 
+import { logger } from './logger'
+
 /**
  * 防抖函数
  * 在指定时间后执行，如果期间再次调用则重新计时
@@ -124,7 +126,7 @@ export class MemoryMonitor {
       const usedMB = memory.usedJSHeapSize / 1024 / 1024
       const limitMB = memory.jsHeapSizeLimit / 1024 / 1024
 
-      console.log(`内存使用: ${usedMB.toFixed(2)}MB / ${limitMB.toFixed(2)}MB`)
+      logger.debug(`内存使用: ${usedMB.toFixed(2)}MB / ${limitMB.toFixed(2)}MB`)
 
       // 如果内存使用超过80%，触发清理
       if (usedMB / limitMB > 0.8) {
@@ -223,7 +225,7 @@ export function measureTime<T>(fn: () => T, label?: string): T {
   const end = performance.now()
 
   if (label) {
-    console.log(`${label} 执行时间: ${(end - start).toFixed(2)}ms`)
+    logger.debug(`${label} 执行时间: ${(end - start).toFixed(2)}ms`)
   }
 
   return result
@@ -241,7 +243,7 @@ export async function measureAsyncTime<T>(
   const end = performance.now()
 
   if (label) {
-    console.log(`${label} 执行时间: ${(end - start).toFixed(2)}ms`)
+    logger.debug(`${label} 执行时间: ${(end - start).toFixed(2)}ms`)
   }
 
   return result
