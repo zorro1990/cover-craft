@@ -11,7 +11,7 @@ import { PropertyPanel } from '@/components/editor/PropertyPanel/PropertyPanel'
 import { useCanvas } from '@/hooks/useCanvas'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useToast } from '@/components/ui/Toast'
-import { CANVAS_SIZES, exportCanvas, copyToClipboard, downloadCanvas, resizeCanvas, setCanvasBackground } from '@/lib/fabric/canvas'
+import { CANVAS_SIZES, exportCanvas, copyToClipboard, downloadCanvas, resizeCanvas, setCanvasBackground, resetCanvasView } from '@/lib/fabric/canvas'
 import { DEFAULT_TEXT_PROPS } from '@/lib/constants/editor'
 import { createImageObject } from '@/lib/fabric/image'
 import { validateImageFile } from '@/lib/utils/fileValidation'
@@ -174,6 +174,20 @@ export default function EditorPage() {
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [canvasInstance])
+
+  // 重置视图快捷键 (Ctrl+0)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault()
+        resetCanvasView(canvasInstance)
+        toast.success('视图已重置')
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [canvasInstance, toast])
 
   return (
     <div className="h-screen flex flex-col">
